@@ -16,6 +16,7 @@ await connectDB();
 const app = express();
 
 app.use(cors(getCorsOptions()));
+app.options('*', cors(getCorsOptions()));
 app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
