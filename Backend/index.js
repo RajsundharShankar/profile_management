@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
+import { getCorsOptions } from './config/cors.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
@@ -13,14 +14,8 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 await connectDB();
 
 const app = express();
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
-app.use(
-  cors({
-    origin: clientUrl,
-    credentials: true,
-  })
-);
+app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
