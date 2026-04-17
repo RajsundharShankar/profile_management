@@ -76,20 +76,34 @@ export async function uploadAvatar(req, res) {
       if (req.file.path) fs.unlink(req.file.path, () => {});
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    const publicPath = `/uploads/${req.file.filename}`;
+    // On serverless (e.g. Vercel) local disk is not persistent, so store the image inline.
+    // Multer memoryStorage provides `buffer` and `mimetype`.
+    let profileImage = '';
+    if (req.file.buffer && req.file.mimetype) {
+      const b64 = req.file.buffer.toString('base64');
+      profileImage = `data:${req.file.mimetype};base64,${b64}`;
+    } else if (req.file.filename) {
+      // Fallback for disk storage setups
+      profileImage = `/uploads/${req.file.filename}`;
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid image upload payload' });
+    }
     const previous = user.profileImage;
-    user.profileImage = publicPath;
+    user.profileImage = profileImage;
     await user.save();
     if (previous) {
-      const oldPath = oldFilePathFromUrl(previous);
-      if (oldPath && fs.existsSync(oldPath)) {
-        fs.unlink(oldPath, () => {});
+      // Only try to delete old images if they were stored as local /uploads assets
+      if (typeof previous === 'string' && previous.startsWith('/uploads/')) {
+        const oldPath = oldFilePathFromUrl(previous);
+        if (oldPath && fs.existsSync(oldPath)) {
+          fs.unlink(oldPath, () => {});
+        }
       }
     }
     return res.json({
       success: true,
       message: 'Profile picture updated',
-      data: { user, profileImage: publicPath },
+      data: { user, profileImage },
     });
   } catch (err) {
     console.error(err);
