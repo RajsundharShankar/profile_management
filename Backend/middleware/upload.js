@@ -1,36 +1,26 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '..', 'uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination(_req, _file, cb) {
-    cb(null, uploadDir);
-  },
-  filename(_req, file, cb) {
-    const ext = path.extname(file.originalname) || '.jpg';
-    const safe = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, safe);
-  },
-});
+// ⚠️ Use memory storage (works on Vercel / serverless)
+const storage = multer.memoryStorage();
 
 function fileFilter(_req, file, cb) {
-  const allowed = /jpeg|jpg|png|gif|webp/i;
-  const ext = path.extname(file.originalname).slice(1);
-  const mimeOk = allowed.test(file.mimetype) && allowed.test(ext);
-  if (mimeOk) cb(null, true);
-  else cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed'));
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp"
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files (jpeg, jpg, png, gif, webp) are allowed"), false);
+  }
 }
 
 export const uploadAvatar = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter,
 });
